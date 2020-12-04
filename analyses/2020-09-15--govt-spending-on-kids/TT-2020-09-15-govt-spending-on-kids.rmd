@@ -9,7 +9,7 @@ output:
     toc: yes
     toc_float: yes
 params:
-  in_data: 'data/2020/2020-09-15/kids.csv'
+  in_data: "submodules/tidytuesday/data/2020/2020-09-15/kids.csv"
 ---
 
 # About
@@ -19,96 +19,104 @@ This document is a follow-along to the live Tidy Tuesday coding/analysis by Davi
 # Setup
 
 ```{r setup, message=FALSE}
-# # Load packages ----
-# library(knitr)
-# library(extrafont)
-# library(RColorBrewer)
-# library(tidyverse)
-# 
-# # Set working dir for setup chunk ----
-# setwd(rprojroot::find_rstudio_root_file())
-# getwd()
-# 
-# # Set global knit options ----
-# opts_knit$set(
-#     # set project root dir as working dir
-#     root.dir = rprojroot::find_rstudio_root_file()
-# )
-# 
-# # Set global chunk options ----
-# opts_chunk$set(
-# 	tidy.opts = list(width.cutoff = 60),
-# 	tidy = TRUE,
-# 	dev = "pdf",
-# 	fig.path = paste0(dir_results, "/figures-Rmd/")
-# )
+# Load packages ----
+library(knitr)
+library(tidyverse)
+library(tidytuesdayR)
+library(scales)
+
+# Set working dir for setup chunk ----
+setwd(rprojroot::find_rstudio_root_file())
+getwd()
+
+# Set global knit options ----
+opts_knit$set(
+    # set project root dir as working dir
+    root.dir = rprojroot::find_rstudio_root_file()
+)
 ```
 
 ```{r other setup}
-# # make results dir ----
-# if (!is.null(params[["out_opt_id"]])) {
-# 	# set results dir name
-#     dir_results = paste0(params$out_dir,
-#                          "/results",
-#                          as.character(format(Sys.time(),
-#                                              '--%Y-%m-%d-%H%M%S')),
-#                          if (exists("out_opt_id", where = params)) {paste0("--", params$out_opt_id)})
-# 
-#     # make results dir
-#     dir.create(dir_results)
-# } else {
-# 	# set simple results dir name
-#     dir_results = paste0(params$out_dir,
-#                          "/results",
-#                          as.character(format(Sys.time(),
-#                                              '--%Y-%m-%d-%H%M%S')))
-#     # create results dir
-#     dir.create(dir_results)
-# }
-# 
-# # make results subdirs ----
-# dir_results_data = paste0(dir_results, "/data")
-# dir.create(dir_results_data)
-# dir_results_tables = paste0(dir_results, "/tables")
-# dir.create(dir_results_tables)
-# dir_results_plots = paste0(dir_results, "/plots")
-# dir.create(dir_results_plots)
-# dir_tmp = paste0(dir_results, "/tmp")
-# dir.create(dir_tmp)
-# 
-# # export current script to results dir for reproducibility ----
-# src_filepath = rstudioapi::getSourceEditorContext()$path
-# file.copy(from = src_filepath, to = dir_results)
-# 
-# # export variables to shell environment ----
-# Sys.setenv(
-# 	# results dirs and subdirs
-# 	dir_results = dir_results,
-# 	dir_results_plots = dir_results_plots,
-# 	dir_results_tables = dir_results_tables,
-# 	# tmp dir
-# 	dir_tmp = dir_tmp,
-# 	# filepath of current script
-# 	src_filepath = src_filepath
-# )
-```
-
-```{bash export vars, engine.opts = '-i'}
-# export shell variables to file for other chunks to read
-#echo 'export shell_var="sample variable text"' > .shellvars
-```
-
-```{bash, engine.opts = '-i'}
-# read previous shell vars
-#source .shellvars
+# copy tt data from submodule data/ to project data/ folder
 ```
 
 # Load Data
 
+```{r load tt data}
+tt = tt_load("2020-09-15")
+kids = tt$kids
+```
+
+```{r view data}
+kids
+```
+
+
+
+
+# Explore data
+
+```{r explore data}
+# how many distinct types of variables?
+kids %>%
+  distinct(variable)
+```
+
+Inspect the full [variable cookbook](https://jrosen48.github.io/tidykids/articles/tidykids-codebook.html). There are a lot of variables you could analyze.
+
+We might do:
+- a choropleth (colored map by state)
+- animated choropleth - showing change from 1997-2016
+- what states had the fastest growing/shrinking of each of these variables
+
+```{r}
+kids %>%
+  filter(variable == "PK12ed") %>% # let's just look at public spending for K-12
+  distinct(state) # 50 states + DC
+```
+
+```{r}
+kids %>%
+  filter(variable == "PK12ed") %>% # let's just look at public spending for K-12
+  distinct(year) # over 20 years
+```
+
+```{r}
+kids %>%
+  filter(variable == "PK12ed") %>%
+  group_by(year) %>%
+  summarize(total = sum(inf_adj)) %>%
+  ggplot(aes(year, total)) +
+  geom_line() +
+  expand_limits(y = 0) +
+  scale_y_continuous(labels = dollar)
+```
+general spending over time, but we really want to look by state.
+
+```{r}
+kids %>%
+  filter(variable == "PK12ed", 
+         state %in% c("New York", "Louisiana", "Arizona", "California", "Texas", "Florida", "Washington")) %>% # really want to look by state
+  ggplot(aes(year, inf_adj_perchild, color = state)) +
+  geom_line() +
+  expand_limits(y = 0)
+```
+Some look to be kinda linear that we could look at them with an intercept term and how they increase over time
+
+Lets pick 20 states at random
+```{r}
+kids %>%
+  filter(variable == "PK12ed", 
+         state %in% sample(unique(state), 20)) %>% # really want to look by state
+  ggplot(aes(year, inf_adj_perchild)) + # remove color bc too many samples - replace with facet
+  geom_line() +
+  expand_limits(y = 0) +
+  facet_wrap(~ state)
+```
+
 
 
 # Transform Data
-
 
 
 # Analyze Data
