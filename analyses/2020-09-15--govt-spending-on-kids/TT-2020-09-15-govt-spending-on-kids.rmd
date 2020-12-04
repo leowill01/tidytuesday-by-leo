@@ -1,0 +1,127 @@
+---
+title: 'Tidy Tuesday 2020-09-15: Government Spending on Kids'
+author: 'Leo Williams'
+date: |
+  | Created 2020-12-04
+  | Updated: `r format(Sys.time(), "%Y %m_%b %d")`
+output: 
+  html_notebook: 
+    toc: yes
+    toc_float: yes
+params:
+  in_data: 'data/2020/2020-09-15/kids.csv'
+---
+
+# About
+
+This document is a follow-along to the live Tidy Tuesday coding/analysis by David Robinson found here: [Tidy Tuesday live screencast: Analyzing government spending on kids in R](https://www.youtube.com/watch?v=dHRPrVsnNwo)
+
+# Setup
+
+```{r setup, message=FALSE}
+# # Load packages ----
+# library(knitr)
+# library(extrafont)
+# library(RColorBrewer)
+# library(tidyverse)
+# 
+# # Set working dir for setup chunk ----
+# setwd(rprojroot::find_rstudio_root_file())
+# getwd()
+# 
+# # Set global knit options ----
+# opts_knit$set(
+#     # set project root dir as working dir
+#     root.dir = rprojroot::find_rstudio_root_file()
+# )
+# 
+# # Set global chunk options ----
+# opts_chunk$set(
+# 	tidy.opts = list(width.cutoff = 60),
+# 	tidy = TRUE,
+# 	dev = "pdf",
+# 	fig.path = paste0(dir_results, "/figures-Rmd/")
+# )
+```
+
+```{r other setup}
+# # make results dir ----
+# if (!is.null(params[["out_opt_id"]])) {
+# 	# set results dir name
+#     dir_results = paste0(params$out_dir,
+#                          "/results",
+#                          as.character(format(Sys.time(),
+#                                              '--%Y-%m-%d-%H%M%S')),
+#                          if (exists("out_opt_id", where = params)) {paste0("--", params$out_opt_id)})
+# 
+#     # make results dir
+#     dir.create(dir_results)
+# } else {
+# 	# set simple results dir name
+#     dir_results = paste0(params$out_dir,
+#                          "/results",
+#                          as.character(format(Sys.time(),
+#                                              '--%Y-%m-%d-%H%M%S')))
+#     # create results dir
+#     dir.create(dir_results)
+# }
+# 
+# # make results subdirs ----
+# dir_results_data = paste0(dir_results, "/data")
+# dir.create(dir_results_data)
+# dir_results_tables = paste0(dir_results, "/tables")
+# dir.create(dir_results_tables)
+# dir_results_plots = paste0(dir_results, "/plots")
+# dir.create(dir_results_plots)
+# dir_tmp = paste0(dir_results, "/tmp")
+# dir.create(dir_tmp)
+# 
+# # export current script to results dir for reproducibility ----
+# src_filepath = rstudioapi::getSourceEditorContext()$path
+# file.copy(from = src_filepath, to = dir_results)
+# 
+# # export variables to shell environment ----
+# Sys.setenv(
+# 	# results dirs and subdirs
+# 	dir_results = dir_results,
+# 	dir_results_plots = dir_results_plots,
+# 	dir_results_tables = dir_results_tables,
+# 	# tmp dir
+# 	dir_tmp = dir_tmp,
+# 	# filepath of current script
+# 	src_filepath = src_filepath
+# )
+```
+
+```{bash export vars, engine.opts = '-i'}
+# export shell variables to file for other chunks to read
+#echo 'export shell_var="sample variable text"' > .shellvars
+```
+
+```{bash, engine.opts = '-i'}
+# read previous shell vars
+#source .shellvars
+```
+
+# Load Data
+
+
+
+# Transform Data
+
+
+
+# Analyze Data
+
+
+
+# Session Info
+
+```{r save session data}
+# save data image
+save.image(file = paste0(dir_results, "/data.Rdata"))
+
+# save session info
+write_lines(capture.output(sessionInfo()), 
+            path = paste0(dir_results, "/sessionInfo.txt"))
+```
