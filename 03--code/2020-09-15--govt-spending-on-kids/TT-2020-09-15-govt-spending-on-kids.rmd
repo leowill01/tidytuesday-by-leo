@@ -1,0 +1,165 @@
+---
+title: 'Tidy Tuesday 2020-09-15: Government Spending on Kids'
+author: 'Leo Williams'
+date: |
+  | Created 2020-12-04
+  | Updated: `r format(Sys.time(), "%Y %m_%b %d")`
+output: 
+  html_notebook: 
+    toc: yes
+    toc_float: yes
+params:
+  in_data: "submodules/tidytuesday/data/2020/2020-09-15/kids.csv"
+editor_options: 
+  chunk_output_type: console
+---
+
+# About
+
+This document is a follow-along to the live Tidy Tuesday coding/analysis by David Robinson found here: [Tidy Tuesday live screencast: Analyzing government spending on kids in R](https://www.youtube.com/watch?v=dHRPrVsnNwo)
+
+# Setup
+
+```{r setup, message=FALSE}
+# Load packages ----
+library(knitr)
+library(tidyverse)
+library(tidytuesdayR)
+library(scales)
+
+# Set working dir for setup chunk ----
+setwd(rprojroot::find_rstudio_root_file())
+getwd()
+
+# Set global knit options ----
+opts_knit$set(
+    # set project root dir as working dir
+    root.dir = rprojroot::find_rstudio_root_file()
+)
+```
+
+```{r other setup}
+# copy tt data from submodule data/ to project data/ folder
+theme_set(theme_classic() +
+            theme(text = element_text(face = "bold")))
+```
+
+# Load Data
+
+```{r load tt data}
+tt = tt_load("2020-09-15")
+kids = tt$kids
+```
+
+```{r view data}
+kids
+```
+
+
+# Explore data
+
+```{r explore data}
+# how many distinct types of variables?
+kids %>%
+  distinct(variable)
+```
+
+Inspect the full [variable cookbook](https://jrosen48.github.io/tidykids/articles/tidykids-codebook.html). There are a lot of variables you could analyze.
+
+```{r}
+kids %>%
+  filter(variable == "PK12ed") %>% # let's just look at public spending for K-12
+  distinct(state) # 50 states + DC
+```
+
+```{r}
+kids %>%
+  filter(variable == "PK12ed") %>% # let's just look at public spending for K-12
+  distinct(year) # over 20 years
+```
+
+```{r}
+kids %>%
+  filter(variable == "PK12ed") %>%
+  group_by(year) %>%
+  summarize(total = sum(inf_adj)) %>%
+  ggplot(aes(year, total)) +
+  geom_line() +
+  expand_limits(y = 0) +
+  scale_y_continuous(labels = dollar)
+```
+general spending over time, but we really want to look by state.
+
+```{r}
+kids %>%
+  filter(variable == "PK12ed", 
+         state %in% c("New York", "Washington", "California", "Louisiana", "Texas", "Florida")) %>% # really want to look by state
+  ggplot(aes(year, inf_adj_perchild, color = state)) +
+  geom_line() +
+  expand_limits(y = 0)
+```
+Some look to be kinda linear that we could look at them with an intercept term and how they increase over time
+
+Lets pick 20 states at random
+```{r}
+kids %>%
+  filter(variable == "PK12ed", 
+         state %in% sample(unique(state), 51)) %>% # really want to look by state
+  mutate(state = fct_reorder(.f = state, .x = inf_adj_perchild, .fun = max, .desc = T)) %>% # reorder plot based on max value on every states line
+  ggplot(aes(year, inf_adj_perchild*1000)) + # remove color bc too many samples - replace with facet
+  geom_line() +
+  expand_limits(y = 0) +
+  scale_y_continuous(labels = dollar) +
+  facet_wrap(~ state) +
+  labs(x = "Year", 
+       y = "Inflation-adjusted spending per child")
+```
+Randomly chosen states generally show a linear trend. a plateau is noticeable around the time the financial crisis hit. lets add an indicator for that
+
+```{r}
+kids %>%
+  filter(variable == "PK12ed", 
+         state %in% sample(unique(state), 51)) %>% # really want to look by state
+  mutate(state = fct_reorder(.f = state, .x = inf_adj_perchild, .fun = max, .desc = T)) %>% # reorder plot based on max value on every states line
+  ggplot(aes(year, inf_adj_perchild*1000)) + # remove color bc too many samples - replace with facet
+  geom_line() +
+  geom_vline(color = "red", lty = 2, xintercept = 2009) +
+  expand_limits(y = 0) +
+  scale_y_continuous(labels = dollar) +
+  facet_wrap(~ state) +
+  labs(x = "Year", 
+       y = "Inflation-adjusted spending per child")
+```
+lots of states' spending levels off after the crisis. we can do a PCA(?)
+
+lets try to analyze the rate of increase rather than the absolute value of spending
+```{r}
+kids %>%
+  filter(variable == "PK12ed") %>%
+         # state %in% sample(unique(state), 51)) %>% # really want to look by state
+  group_by(state) %>%
+  mutate(change = inf_adj_perchild / first(inf_adj_perchild) - 1) %>%
+  ungroup() %>%
+  mutate(state = fct_reorder(state, change, max, .desc = T)) %>%
+  arrange(state, year) %>%
+  ggplot(aes(year, change)) + # remove color bc too many samples - replace with facet
+  geom_line() +
+  geom_vline(color = "red", lty = 2, xintercept = 2009) +
+  geom_hline(yintercept = 0, color = "lightgray") +
+  expand_limits(y = 0) +
+  scale_y_continuous(labels = percent, breaks = c(0, 1, 2)) +
+  facet_wrap(~ state) +
+  labs(title = "How has K-12 spending changed per student in each state?",
+       subtitle = "Red line indicates the 2009 global financial crisis",
+       x = "Year", 
+       y = "Increase in Inflation-adjusted spending per child relative to 1997")
+```
+
+
+# Ideas
+
+We might do:
+- Principal component analysis
+- a choropleth (colored map by state)
+- animated choropleth - showing change from 1997-2016
+- what states had the fastest growing/shrinking of each of these variables
