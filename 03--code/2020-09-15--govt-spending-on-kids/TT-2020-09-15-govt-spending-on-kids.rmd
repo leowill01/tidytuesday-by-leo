@@ -154,32 +154,61 @@ kids %>%
        subtitle = "Red line indicates the 2009 global financial crisis",
        x = "Year", 
        y = "Increase in Inflation-adjusted spending per child relative to 1997")
+```
+
 We could apply a lot of this code to other variables in the dataset.
 
 let's put the common plotting code into a function:
 ```{r}
+# now separate plotting part from transformation part
+plot_faceted = function(tbl, y_axis) {
+    tbl %>%
+    mutate(state = fct_reorder(state, {{ y_axis }}, max, .desc = T)) %>%
+    # common code for plotting
+    ggplot(aes(year, {{ y_axis }})) + # remove color bc too many samples - replace with facet
+    geom_hline(yintercept = 0, color = "gray") +
+    geom_line() +
+    facet_wrap(~ state)
+}
+
 plot_change_faceted = function(tbl) {
   tbl %>%
     # need to add change variable
     group_by(state, variable) %>%
     mutate(change = inf_adj_perchild / first(inf_adj_perchild) - 1) %>%
     ungroup() %>%
-    mutate(state = fct_reorder(state, change, max, .desc = T)) %>%
-    # common code for plotting
-    ggplot(aes(year, change)) + # remove color bc too many samples - replace with facet
-    geom_line() +
-    geom_vline(color = "red", lty = 2, xintercept = 2009) +
-    geom_hline(yintercept = 0, color = "lightgray") +
-    expand_limits(y = 0) +
-    scale_y_continuous(labels = percent, breaks = c(0, 1, 2)) +
-    facet_wrap(~ state) +
-    labs(title = "How has K-12 spending changed per student in each state?",
-         subtitle = "Red line indicates the 2009 global financial crisis",
-         x = "Year", 
-         y = "Increase in Inflation-adjusted spending per child relative to 1997")
+    plot_faceted(change) +
+    scale_y_continuous(labels = percent)
 }
 ```
 
+Now do the same plot but implement with the new function
+```{r}
+kids %>%
+  filter(variable == "PK12ed") %>%
+  plot_change_faceted() +
+  geom_vline(color = "red", lty = 2, xintercept = 2009) +
+  geom_hline(yintercept = 0, color = "lightgray") +
+  labs(title = "How has K-12 spending changed per student in each state?",
+       subtitle = "Red line indicates the 2009 global financial crisis",
+       x = "Year", 
+       y = "Increase in Inflation-adjusted spending per child relative to 1997")
+```
+
+Lets apply this to another variable:
+```{r}
+kids %>%
+  filter(variable == "highered") %>%
+  plot_change_faceted() +
+  geom_vline(color = "red", lty = 2, xintercept = 2009) +
+  # geom_hline(yintercept = 0, color = "lightgray") +
+  labs(title = "How has higher education spending changed per student in each state?",
+       subtitle = "Red line indicates the 2009 global financial crisis",
+       x = "Year", 
+       y = "Increase in Inflation-adjusted spending per child relative to 1997")
+```
+
+***INCOMPLETE***: just watched the rest of the screencast starting about halfway through when he starts importing the excel files.
 
 # Ideas
 
